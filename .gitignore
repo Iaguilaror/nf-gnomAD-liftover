@@ -1,0 +1,2 @@
+## ignoring any test results dir from mk modules
+mkmodules/*/test/results
