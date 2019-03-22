@@ -1,0 +1,9 @@
+## ignoring any test results dir from mk modules
+mkmodules/*/test/results
+
+## ignore nextflow local trash files
+.nextflow*
+work/
+
+## ignore test results dir from main repo dir
+test/results/
