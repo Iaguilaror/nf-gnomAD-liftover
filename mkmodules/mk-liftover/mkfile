@@ -1,0 +1,7 @@
+MKSHELL=/bin/bash
+
+## target:OPTIONS: prereq
+%.liftover.vcf:Q: %.vcf
+	echo "[DEBUG] lifting over"
+	CrossMap.py vcf $CHAINFILE $prereq $REFERENCE_GENOME $target.build \
+	&& mv $target.build $target
