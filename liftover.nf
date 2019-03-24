@@ -30,6 +30,7 @@ Pre-processing:
 
 Core-processing:
 	_001_liftover
+	_002_sort_and_compress
 
 Post-processing:
 	// _pos1
@@ -211,7 +212,11 @@ log.info "==========================================\nPipeline Start"
 module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-PASS"
 
 /* _001_liftover */
+
 module_mk_001_liftover = "${workflow.projectDir}/mkmodules/mk-liftover"
+
+/* _002_sort_and_compress */
+module_mk_002_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-bcf"
 
 /*
 	READ INPUTS
@@ -262,7 +267,7 @@ Channel
 
 process _001_liftover {
 
-	publishDir "${results_dir}/_001_liftover/",mode:"copy"
+	publishDir "${results_dir}/_001_liftover/",mode:"symlink"
 
 	input:
   file vcf from results_pre1_filtering_PASS
@@ -276,6 +281,31 @@ process _001_liftover {
 	"""
   export CHAINFILE="\$(ls *.chain)"
   export REFERENCE_GENOME="\$(ls *.fa)"
+  bash runmk.sh
+	"""
+
+}
+
+/* _002_sort_and_compress */
+
+/* Read mkfile module files */
+Channel
+	.fromPath("${module_mk_002_sort_and_compress}/*")
+	.toList()
+	.set{ mkfiles_002 }
+
+process _002_sort_and_compress {
+
+	publishDir "${results_dir}/_002_sort_and_compress/",mode:"copy"
+
+	input:
+  file vcf from results_001_liftover_mapped
+	file mk_files from mkfiles_002
+
+  output:
+  file "*.bcf.gz" into results_002_sort_and_compress
+
+	"""
   bash runmk.sh
 	"""
 
