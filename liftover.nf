@@ -8,7 +8,7 @@ The MORETT LAB presents...
 - A genome coordinates convertion tool
 
 ==================================================================
-Version: 0.0.1
+Version: 0.0.2
 Project repository: https://github.com/Iaguilaror/nf-gnomAD-liftover
 ==================================================================
 Authors:
