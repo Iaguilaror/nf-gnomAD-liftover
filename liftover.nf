@@ -270,8 +270,8 @@ process _001_liftover {
 	file mk_files from mkfiles_001
 
   output:
-  file "*.liftover.vcf"
-  file "*.unmap"
+  file "*.liftover.vcf" into results_001_liftover_mapped
+  file "*.unmap" into results_001_liftover_unmapped
 
 	"""
   export CHAINFILE="\$(ls *.chain)"
