@@ -262,6 +262,12 @@ process _pre1_filtering_PASS {
 
 }
 
+results_pre1_filtering_PASS
+	.toList()
+	.flatten()
+	// .view()
+	.set{ delayed_results_pre1_filtering_PASS }
+
 /* Process _001_liftover */
 /* Read mkfile module files */
 Channel
@@ -274,7 +280,7 @@ process _001_liftover {
 	publishDir "${intermediates_dir}/_001_liftover/",mode:"symlink"
 
 	input:
-  file vcf from results_pre1_filtering_PASS
+  file vcf from delayed_results_pre1_filtering_PASS
   file genome from liftover_references
 	file mk_files from mkfiles_001
 
@@ -290,6 +296,13 @@ process _001_liftover {
 
 }
 
+/* Delay further processes until all of the samples have passed the previous one*/
+results_001_liftover_mapped
+	.toList()
+	.flatten()
+	// .view()
+	.set{ delayed_results_001_liftover_mapped }
+
 /* _002_simplify_header */
 
 /* Read mkfile module files */
@@ -303,7 +316,7 @@ process _002_simplify_header {
 	publishDir "${intermediates_dir}/_002_simplify_header/",mode:"symlink"
 
 	input:
-  file vcf from results_001_liftover_mapped
+  file vcf from delayed_results_001_liftover_mapped
 	file mk_files from mkfiles_002
 
   output:
@@ -314,6 +327,12 @@ process _002_simplify_header {
 	"""
 
 }
+
+results_002_simplify_header
+	.toList()
+	.flatten()
+	// .view()
+	.set{ delayed_results_002_simplify_header }
 
 /* _003_sort_and_compress */
 
@@ -328,7 +347,7 @@ process _003_sort_and_compress {
 	publishDir "${results_dir}/_003_sort_and_compress/",mode:"copy"
 
 	input:
-  file vcf from results_002_simplify_header
+  file vcf from delayed_results_002_simplify_header
 	file mk_files from mkfiles_003
 
   output:
