@@ -8,7 +8,7 @@ The MORETT LAB presents...
 - A genome coordinates convertion tool
 
 ==================================================================
-Version: 0.0.2
+Version: 0.0.3
 Project repository: https://github.com/Iaguilaror/nf-gnomAD-liftover
 ==================================================================
 Authors:
@@ -30,7 +30,8 @@ Pre-processing:
 
 Core-processing:
 	_001_liftover
-	_002_sort_and_compress
+	_002_simplify_header
+	_003_sort_and_compress
 
 Post-processing:
 	// _pos1
@@ -215,8 +216,11 @@ module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-P
 
 module_mk_001_liftover = "${workflow.projectDir}/mkmodules/mk-liftover"
 
-/* _002_sort_and_compress */
-module_mk_002_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-bcf"
+/* _002_simplify_header */
+module_mk_002_simplify_header = "${workflow.projectDir}/mkmodules/mk-simplify-vcf-header"
+
+/* _003_sort_and_compress */
+module_mk_003_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-bcf"
 
 /*
 	READ INPUTS
@@ -267,7 +271,7 @@ Channel
 
 process _001_liftover {
 
-	publishDir "${results_dir}/_001_liftover/",mode:"symlink"
+	publishDir "${intermediates_dir}/_001_liftover/",mode:"symlink"
 
 	input:
   file vcf from results_pre1_filtering_PASS
@@ -286,24 +290,49 @@ process _001_liftover {
 
 }
 
-/* _002_sort_and_compress */
+/* _002_simplify_header */
 
 /* Read mkfile module files */
 Channel
-	.fromPath("${module_mk_002_sort_and_compress}/*")
+	.fromPath("${module_mk_002_simplify_header}/*")
 	.toList()
 	.set{ mkfiles_002 }
 
-process _002_sort_and_compress {
+process _002_simplify_header {
 
-	publishDir "${results_dir}/_002_sort_and_compress/",mode:"copy"
+	publishDir "${intermediates_dir}/_002_simplify_header/",mode:"symlink"
 
 	input:
   file vcf from results_001_liftover_mapped
 	file mk_files from mkfiles_002
 
   output:
-  file "*.bcf.gz" into results_002_sort_and_compress
+  file "*.reheaded.vcf" into results_002_simplify_header
+
+	"""
+  bash runmk.sh
+	"""
+
+}
+
+/* _003_sort_and_compress */
+
+/* Read mkfile module files */
+Channel
+	.fromPath("${module_mk_003_sort_and_compress}/*")
+	.toList()
+	.set{ mkfiles_003 }
+
+process _003_sort_and_compress {
+
+	publishDir "${results_dir}/_003_sort_and_compress/",mode:"copy"
+
+	input:
+  file vcf from results_002_simplify_header
+	file mk_files from mkfiles_003
+
+  output:
+  file "*.bcf.gz" into results_003_sort_and_compress
 
 	"""
   bash runmk.sh
