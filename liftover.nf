@@ -210,7 +210,7 @@ log.info "==========================================\nPipeline Start"
 */
 
 /* _pre1_filtering_PASS */
-module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-PASS"
+module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-PASS-option2"
 
 /* _001_liftover */
 
