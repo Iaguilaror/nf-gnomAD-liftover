@@ -4,7 +4,7 @@ echo -e "======\n Testing NF execution \n======" \
 && rm -rf test/results/ \
 && nextflow run liftover.nf \
 	--vcf_dir test/data/ \
-	--genome_fasta /home/acerlap/Databases/genomes/hs_ref_GRCh38.p12.fa \
+	--genome_fasta test/reference/genome-fasta/chr21.fa \
 	--chainfile test/reference/chainfile/GRCh37_to_GRCh38.chain \
 	--output_dir test/results \
 	-resume \
