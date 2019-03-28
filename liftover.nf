@@ -8,7 +8,7 @@ The MORETT LAB presents...
 - A genome coordinates convertion tool
 
 ==================================================================
-Version: 0.0.3
+Version: 0.0.4
 Project repository: https://github.com/Iaguilaror/nf-gnomAD-liftover
 ==================================================================
 Authors:
@@ -69,7 +69,7 @@ def helpMessage() {
   Define pipeline version
   If you bump the number, remember to bump it in the header description at the begining of this script too
 */
-version = "0.0.1"
+version = "0.0.4"
 
 /*//////////////////////////////
   Define pipeline Name
@@ -210,7 +210,7 @@ log.info "==========================================\nPipeline Start"
 */
 
 /* _pre1_filtering_PASS */
-module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-PASS-option2"
+module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-PASS"
 
 /* _001_liftover */
 

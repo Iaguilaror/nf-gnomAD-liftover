@@ -3,10 +3,5 @@ MKSHELL=/bin/bash
 ## target:OPTIONS: prereq
 %.PASSfiltered.vcf:Q: %.vcf.bgz
 	echo "[DEBUG] filtering variants"
-	zcat $prereq \
-	| awk '
-		BEGIN {FS=OFS="\t"}
-		$1 ~ /^#/ { print $0 }
-		$7=="PASS" { print $0 }
-	' > $target.build \
+ 	bcftools view --apply-filters PASS $prereq > $target.build \
 	&& mv $target.build $target

@@ -5,7 +5,7 @@
 # CHAINFILE="path to the chain file for liftover"
 # REFERENCE_GENOME="genome sequence file of 'target assembly' in FASTA format."
 export CHAINFILE="test/reference/GRCh37_to_GRCh38.chain"
-export REFERENCE_GENOME="test/reference/hs_ref_GRCh38.p12.fa"
+export REFERENCE_GENOME="test/reference/chr21.fa"
 
 echo "[>..] test running this module with data in test/data"
 ## Remove old test results, if any; then create test/reults dir
