@@ -10,7 +10,7 @@ echo "[>>.] results will be created in test/results"
 ## Move results from test/data to test/results
 ## results files are *.PASSfiltered.liftover.edited.vcf NOT including .chunk*
 ./runmk.sh \
-&& find . \
+&& find -L . \
   -type f \
   -name "*.vcf" \
   ! -name "*.chunk*" \
