@@ -26,12 +26,14 @@ Authors:
 Pipeline Processes In Brief:
 
 Pre-processing:
+	_pre0_split_vcf
   _pre1_filtering_PASS
 
 Core-processing:
 	_001_liftover
 	_002_edit_vcf
-	_003_sort_and_compress
+	_003_concatenate_vcf
+	_004_sort_and_compress
 
 Post-processing:
 	// _pos1
@@ -49,7 +51,7 @@ def helpMessage() {
 
 	Usage:
 
-  nextflow run liftover.nf --vcf_dir <path to input 1> --genome_fasta <path to input 2> --chainfile <path to input 3> [--output_dir path to results ]
+  nextflow run liftover.nf --vcf_dir <path to input 1> --genome_fasta <path to input 2> --chainfile <path to input 3> [--output_dir path to results] [--chunks INT] [--rehead true|false]
 
     --vcf_dir    <- Directory with all the vcf files to convert;
 		    vcf must be in .vcf.gz format
@@ -60,6 +62,10 @@ def helpMessage() {
         find them at http://crossmap.sourceforge.net/#chain-file
     --output_dir     <- directory where results, intermediate and log files will be stored;
 				default: same level dir where --vcf_dir resides
+		--chunks		<- each input vcf file will be split in INT pieces for parallelization;
+				default: 1
+		--rehead		<- clean output vcf header from unused contigs and append pipeline information;
+				default: true
 	  --help           <- Show Pipeline Information
 	  --version        <- Show Pipeline version
 	""".stripIndent()
@@ -84,6 +90,8 @@ pipeline_name = "gnomADliftover"
 params.vcf_dir = false  //if no inputh path is provided, value is false to provoke the error during the parameter validation block
 params.genome_fasta = false //if no inputh path is provided, value is false to provoke the error during the parameter validation block
 params.chainfile = false //default is false to not trigger help message automatically at every run
+params.jobs_per_vcf = 1 //default is 1, to not split each VCF input
+params.rehead = true //default is to clean output vcf header from unused contigss, and append pipeline information
 params.help = false //default is false to not trigger help message automatically at every run
 params.version = false //default is false to not trigger version message automatically at every run
 
@@ -191,6 +199,7 @@ def pipelinesummary = [:]
 pipelinesummary['VCF dir']			= params.vcf_dir
 pipelinesummary['Genome fasta']			= params.genome_fasta
 pipelinesummary['ChainFile']			= params.chainfile
+pipelinesummary['Chunks per VCF']			= params.chunks
 pipelinesummary['Results Dir']		= results_dir
 pipelinesummary['Intermediate Dir']		= intermediates_dir
 /* print stored summary info */
@@ -209,18 +218,29 @@ log.info "==========================================\nPipeline Start"
   will always be retrieved from a path relative to this NF script
 */
 
+/* _pre0_split_vcf */
+module_mk_pre0_split_vcf = "${workflow.projectDir}/mkmodules/mk-split-vcf"
+
 /* _pre1_filtering_PASS */
 module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-PASS"
 
 /* _001_liftover */
-
 module_mk_001_liftover = "${workflow.projectDir}/mkmodules/mk-liftover"
 
 /* _002_edit_vcf */
 module_mk_002_edit_vcf = "${workflow.projectDir}/mkmodules/mk-edit-vcf"
 
-/* _003_sort_and_compress */
-module_mk_003_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-vcf"
+/* _003_concatenate_vcf */
+module_mk_003_concatenate_vcf = "${workflow.projectDir}/mkmodules/mk-concat-vcf"
+
+/* _004_sort_and_compress
+	* this module is dinamyc, affected by user requested options
+*/
+if (params.rehead) {
+	module_mk_004_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-rehead-compress-vcf"
+} else {
+	module_mk_004_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-compress-vcf"
+}
 
 /*
 	READ INPUTS
@@ -237,8 +257,39 @@ Channel
   .toList()
 	.set{ liftover_references }
 
+/* 	Process _pre0_split_vcf */
+/* Read mkfile module files */
+Channel
+	.fromPath("${module_mk_pre0_split_vcf}/*")
+	.toList()
+	.set{ mkfiles_pre0 }
 
-/* Process _pre1_filtering_PASS */
+process _pre0_split_vcf {
+
+	publishDir "${intermediates_dir}/_pre0_split_vcf/",mode:"symlink"
+
+	input:
+  file vcf from vcf_inputs
+	file mk_files from mkfiles_pre0
+
+	output:
+	file "*.chunk*.vcf" into results_pre0_split_vcf
+
+	"""
+	export NUMBER_OF_CHUNKS="${params.chunks}"
+	bash runmk.sh
+	"""
+
+}
+
+/* delay the next pipeline step by waiting to gather every previous file into a list, that is inmediatle unraveled into single elements again */
+results_pre0_split_vcf
+	.toList()
+	.flatten()
+	// .view()
+	.set{ delayed_results_pre0_split_vcf }
+
+/* 	Process _pre1_filtering_PASS */
 /* Read mkfile module files */
 Channel
 	.fromPath("${module_mk_pre1_filtering_PASS}/*")
@@ -250,18 +301,19 @@ process _pre1_filtering_PASS {
 	publishDir "${intermediates_dir}/_pre1_filtering_PASS/",mode:"symlink"
 
 	input:
-  file vcf from vcf_inputs
+  file vcf from delayed_results_pre0_split_vcf
 	file mk_files from mkfiles_pre1
 
 	output:
-	file "*.PASSfiltered.vcf" into results_pre1_filtering_PASS
 
+	file "*.PASSfiltered.vcf" into results_pre1_filtering_PASS
 	"""
 	bash runmk.sh
 	"""
 
 }
 
+/* delay the next pipeline step by waiting to gather every previous file into a list, that is inmediatle unraveled into single elements again */
 results_pre1_filtering_PASS
 	.toList()
 	.flatten()
@@ -303,7 +355,7 @@ results_001_liftover_mapped
 	// .view()
 	.set{ delayed_results_001_liftover_mapped }
 
-/* _002_edit_vcf */
+/* Process _002_edit_vcf */
 
 /* Read mkfile module files */
 Channel
@@ -328,32 +380,71 @@ process _002_edit_vcf {
 
 }
 
+/* Delay further processes until all of the samples have passed the previous one*/
 results_002_edit_vcf
 	.toList()
 	.flatten()
 	// .view()
 	.set{ delayed_results_002_edit_vcf }
 
-/* _003_sort_and_compress */
+/* Gather every chunk into a single list object */
+delayed_results_002_edit_vcf
+	.toList()
+	// .view()
+	.set{ multiplechunks_from_results_002_edit_vcf }
+
+/* _003_concatenate_vcf */
 
 /* Read mkfile module files */
 Channel
-	.fromPath("${module_mk_003_sort_and_compress}/*")
+	.fromPath("${module_mk_003_concatenate_vcf}/*")
 	.toList()
 	.set{ mkfiles_003 }
 
-process _003_sort_and_compress {
+process _003_concatenate_vcf {
 
-	publishDir "${results_dir}/_003_sort_and_compress/",mode:"copy"
+	publishDir "${intermediates_dir}/_003_concatenate_vcf/",mode:"symlink"
 
 	input:
-  file vcf from delayed_results_002_edit_vcf
+  file chunks from multiplechunks_from_results_002_edit_vcf
 	file mk_files from mkfiles_003
 
   output:
-  file "*.vcf.bgz" into results_003_sort_and_compress
+  file "*.vcf" into results_003_concatenate_vcf
 
 	"""
+  bash runmk.sh
+	"""
+}
+
+/* Delay further processes until all of the samples have passed the previous one*/
+results_003_concatenate_vcf
+	.toList()
+	.flatten()
+	// .view()
+	.set{ delayed_results_003_concatenate_vcf }
+
+/* _004_sort_and_compress */
+
+/* Read mkfile module files */
+Channel
+	.fromPath("${module_mk_004_sort_and_compress}/*")
+	.toList()
+	.set{ mkfiles_004 }
+
+process _004_sort_and_compress {
+
+	publishDir "${results_dir}/_004_sort_and_compress/",mode:"copy"
+
+	input:
+  file vcf from delayed_results_003_concatenate_vcf
+	file mk_files from mkfiles_004
+
+  output:
+  file "*.vcf.bgz" into results_004_sort_and_compress
+
+	"""
+	export PIPELINE_VERSION="${version}"
   bash runmk.sh
 	"""
 

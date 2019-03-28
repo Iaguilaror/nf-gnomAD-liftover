@@ -6,6 +6,8 @@ echo -e "======\n Testing NF execution \n======" \
 	--vcf_dir test/data/ \
 	--genome_fasta test/reference/genome-fasta/chr21.fa \
 	--chainfile test/reference/chainfile/GRCh37_to_GRCh38.chain \
+	--chunks 2 \
+	--rehead true \
 	--output_dir test/results \
 	-resume \
 	-with-report test/results/`date +%Y%m%d_%H%M%S`_report.html \
