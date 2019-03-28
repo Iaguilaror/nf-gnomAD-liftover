@@ -36,7 +36,7 @@ Core-processing:
 	_004_sort_and_compress
 
 Post-processing:
-	// _pos1
+	_pos1_count_lifted_variants
 
 ================================================================*/
 
@@ -247,6 +247,9 @@ if (params.rehead) {
 	module_mk_004_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-compress-vcf"
 }
 
+/* _pos1_count_lifted_variants */
+module_mk_pos1_count_lifted_variants = "${workflow.projectDir}/mkmodules/mk-count-lifted-variants"
+
 /*
 	READ INPUTS
 */
@@ -254,7 +257,7 @@ if (params.rehead) {
 /* Load vcf files into channel */
 Channel
   .fromPath("${params.vcf_dir}/*")
-  .set{ vcf_inputs }
+  .into{ vcf_inputs; also_vcf_inputs }
 
 /* Load genome fasta file, and chainfile into channel */
 Channel
@@ -422,7 +425,7 @@ process _003_concatenate_vcf {
 	file mk_files from mkfiles_003
 
   output:
-  file "*.vcf" into results_003_concatenate_vcf
+  file "*.vcf" into results_003_concatenate_vcf, also_results_003_concatenate_vcf
 
 	"""
   bash runmk.sh
@@ -458,6 +461,38 @@ process _004_sort_and_compress {
 	"""
 	export PIPELINE_VERSION="${version}"
 	export PIPELINE_COMMAND="${workflow.commandLine}"
+  bash runmk.sh
+	"""
+
+}
+
+/* Gather and tupple original inputs, with concatenated outputs */
+also_vcf_inputs
+	.mix(also_results_003_concatenate_vcf)
+	.map{ file -> tuple(get_sample_prefix(file), file) }
+	.groupTuple()
+	.set{ inputs_for_pos1 }
+
+/* _pos1_count_lifted_variants */
+/* Read mkfile module files */
+Channel
+	.fromPath("${module_mk_pos1_count_lifted_variants}/*")
+	.toList()
+	.set{ mkfiles_pos1 }
+
+process _pos1_count_lifted_variants {
+
+	publishDir "${results_dir}/_pos1_count_lifted_variants/",mode:"copy"
+
+	input:
+	set val( sample_name ), file( sample ) from inputs_for_pos1
+	file mk_files from mkfiles_pos1
+
+  output:
+  file "*.tsv" into results_pos1_count_lifted_variants
+  file "*.pdf"
+
+	"""
   bash runmk.sh
 	"""
 

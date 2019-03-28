@@ -1,0 +1,40 @@
+MKSHELL=/bin/bash
+
+## Generate a PDF report for easy viewing of results:
+%_report.pdf:Q: %.variants_summary.tsv
+	echo "[DEBUG] generating report vcf"
+	Rscript reporter.R $prereq $target.build \
+	&& mv $target.build $target
+
+## Precalculate a dataframe to reduce R load during report generation
+# create a table with the following format
+# -----------------------
+# total_variants | value (get via bcftools stats SOMETHING.vcf.bgz | grep number of records: | cut -f2)
+# mapped_variants_all | value (get via bcftools stats *filtered.vcf | grep number of records: | cut -f2)
+%.variants_summary.tsv:Q: %.vcf
+	# mapped_variants_PASS	| value (get via bcftools view -H *filtered.vcf | awk $7=="PASS"{} | wc -l) DID NOT WORK. grep alternative
+	echo "[DEBUG] Precalculating values for report"
+	## dynamically build sample location to search for the corresponding bcf.gz file, regardles of filteres/edited/reheaded/status
+	# this avoids cumbersome rule header manipulation and use of regexp
+	sample_dir=$(dirname $prereq)
+	sample_prefix=$(basename $prereq | cut -d"." -f1 )
+	subprereq="$sample_dir/$sample_prefix.vcf.bgz"
+	# Calculate total variants from subprereq
+	total_variants=$(bcftools stats $subprereq | grep -m1 "number of records:" | cut -f4)
+	mapped_variants=$(bcftools stats $prereq | grep -m1 "number of records:" | cut -f4)
+	## count variants with PASS in the filter columns, using the answer from https://unix.stackexchange.com/questions/362278/how-to-use-awk-to-count-the-total-number-of-input-lines-in-a-file
+	mapped_variants_PASS=$(bcftools view -H $prereq | cut -f7 | grep -w -c "^PASS")
+	# calculate unmapped_variants
+	unmapped_variants=$(($total_variants - $mapped_variants))
+	# noPASS variants
+	mapped_variants_noPASS=$(($mapped_variants - $mapped_variants_PASS))
+	## put everything in a table
+	{
+	echo variants	number
+	echo total_variants $total_variants
+	echo unmapped_variants $unmapped_variants
+	echo mapped_variants $mapped_variants
+	echo mapped_variants_PASS	$mapped_variants_PASS
+	echo mapped_variants_noPASS $mapped_variants_noPASS
+	} | tr " " "\t" > $target.build \
+	&& mv $target.build $target
