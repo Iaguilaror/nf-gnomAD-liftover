@@ -1,0 +1,21 @@
+MKSHELL=/bin/bash
+
+## rejoin header and concatenated body
+%.PASSfiltered.liftover.edited.vcf:Q: %.concat_body.tmp
+	echo "[DEBUG] put header and body together"
+	# Use header from the first chunk
+	bcftools view -h $(ls $stem.chunk* | sort -V | head -n1) > $target.build
+	cat $prereq >> $target.build \
+	&& mv $target.build $target \
+	&& rm $stem.concat_body.tmp
+
+%.concat_body.tmp:Q:
+	echo "[DEBUG] concatenating chunks"
+	# Create empty file for receiving the body chunks
+	> $target.build
+	for chunk in $stem.chunk*
+	do
+		echo "[DEBUG] concatenating body from $chunk"
+		bcftools view -H $chunk >> $target.build
+	done \
+	&& mv $target.build $target

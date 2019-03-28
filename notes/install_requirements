@@ -1,0 +1,16 @@
+## Crossmap
+# Best way is to install via conda
+# package is here https://bioconda.github.io/recipes/crossmap/README.html
+
+# So, first install conda...
+# for ubuntu 16.04, see https://medium.com/@menuram1126/how-to-install-anaconda-on-ubuntu-16-04-538009ca7936
+
+# Setup bioconda channels
+# https://bioconda.github.io/index.html#set-up-channels
+
+conda config --add channels defaults
+conda config --add channels bioconda
+conda config --add channels conda-forge
+
+# Then use conda o install Crossmap.py
+conda install crossmap

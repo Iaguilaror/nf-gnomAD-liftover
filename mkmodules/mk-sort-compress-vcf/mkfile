@@ -1,0 +1,16 @@
+MKSHELL=/bin/bash
+
+## target:OPTIONS: prereq
+%.sorted.vcf.bgz:Q: %.vcf
+	echo '[DEBUG] sorting and compressing vcf file'
+	## Generate a random string to name the tmp directory for sorting
+	## this avoids using system's default tmp dir
+	tmpdirname=$(for character in {1..3}; do echo {a..z} {A..Z} | tr ' ' '\n' | shuf -n1 ; done | awk ' BEGIN {ORS=""} {print $0}')
+	tmpsubdirname=$(for character in {1..9}; do echo {a..z} {A..Z} {0..9} | tr ' ' '\n' | shuf -n1 ; done | awk ' BEGIN {ORS=""} {print $0}')
+	tmpdir="$(echo tmp/$tmpdirname/$tmpsubdirname/)"
+	bcftools sort \
+		--output-file $target.build \
+		--output-type z \
+		--temp-dir $tmpdir \
+		$prereq \
+	&& mv $target.build $target
