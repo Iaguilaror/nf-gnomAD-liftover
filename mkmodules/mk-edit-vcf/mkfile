@@ -1,14 +1,58 @@
 MKSHELL=/bin/bash
 
+# rehead vcf
+%.edited.vcf:Q: %.pre-edited.vcf.tmp %.newheader.tmp
+	echo "[DEBUG] reheading vcf"
+	bcftools reheader --header $stem.newheader.tmp $stem.pre-edited.vcf.tmp > $target.build \
+	&& mv $target.build $target \
+	&& rm $stem.*.tmp
+
+## Create new header
+%.newheader.tmp:Q: %.pre-edited.vcf.tmp
+	echo "[DEBUG] cleaning header from unused contigs"
+	# 1. Using grep to extract 3 blocks from the header of the input_file to various tmp files (via > redirection)
+	# find where in the header does the contig block starts and ends
+	contig_block_start=$(bcftools view -h $prereq | grep -n "^##contig=<ID=" | head -n1 | cut -d":" -f1)
+	contig_block_end=$(bcftools view -h $prereq | grep -n "^##contig=<ID=" | tail -n1 | cut -d":" -f1)
+	# a. extract pre-contig header
+  bcftools view -h $prereq | head -n$((contig_block_start - 1)) > $target.precontigblock.tmp
+  # b. extract contig header
+  bcftools view -h $prereq | head -n$contig_block_end | tail -n+$contig_block_start > $target.contigblock.tmp
+  # c. extract post-contig header
+  bcftools view -h $prereq | tail -n+$((contig_block_end + 1)) > $target.postcontigblock.tmp
+	# create an index of contig name, and contig header line; put it in a tmp file
+  # remove contigs with * and : characters
+	awk 'BEGIN{FS="[=,]"; OFS="\t"} {print $3,$0}' $target.contigblock.tmp > $target.contigindex.tmp
+	# create a list of contigs present in the vcf body; put it in a tmp file
+	bcftools view -H $prereq | cut -f1 | sort -u > $target.bodycontigindex.tmp
+	# Loop through contig index to create a new contig block only with contigs shared by header and body
+  # create empty file for newcontigblock
+  > $target.newcontigblock.tmp
+	while read indexline
+	do
+	  chromosome=$(echo "$indexline" | cut -f1)
+	  contig_id=$(echo "$indexline" | cut -f2)
+	  echo "calculating variants for $chromosome"
+		## use grep for logical test to check if the body had any variant for the contig
+	  if [ $(grep -w "$chromosome" $target.bodycontigindex.tmp) ]
+	  then
+			## Add the chr prefix to contigs since gnomad data will be used to annotate 78GMX...
+	    echo "$contig_id" >> $target.newcontigblock.tmp
+	  fi
+	done < $target.contigindex.tmp
+	## Reconstitute header by concatenating blocks
+	cat $target.precontigblock.tmp $target.newcontigblock.tmp $target.postcontigblock.tmp > $target.build \
+	&& mv $target.build $target
+
 ## edit a vcf file to:
 # 1. (bcftools annotate --remove LIST) remove some anotations from the fields: use a fields_to_remove.txt file to control this
 # 2. (bcftools annotate --rename-chrs file) change chr names from 1,2,3... to chr1,chr2,chr3...: use a  map in file, with "old_name new_name\n" pairs separated by whitespaces, each on a separate line.
-%.edited.vcf:Q: %.vcf
+%.pre-edited.vcf.tmp:Q: %.vcf
 	echo "[DEBUG] editing vcf"
 	## transform column format in fields_to_remove.txt to comma separated list
 	# IMPORTANT: lines starting wiht # WILL BE removed from the fields
 	bcftools annotate \
 		--remove $(grep "^#" fields_to_remove.txt | tr -d "#" | tr "\n" "," | sed "s#,\$##") \
 		--rename-chrs chr_synonyms.txt \
-	$stem.vcf > $target.build \
+	$prereq > $target.build \
 	&& mv $target.build $target
