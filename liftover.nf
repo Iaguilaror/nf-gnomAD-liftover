@@ -387,9 +387,15 @@ results_002_edit_vcf
 	// .view()
 	.set{ delayed_results_002_edit_vcf }
 
+/* Define function for finding files that share sample name */
+/* in this case, the file name comes from the 1st, since tokenize array starts at 0, array index shoould be 0 */
+def get_sample_prefix = { file -> file.name.toString().tokenize('.')[0] }
+
 /* Gather every chunk into a single list object */
+/* Separate in tuples by sample */
 delayed_results_002_edit_vcf
-	.toList()
+	.map{ file -> tuple(get_sample_prefix(file), file) }
+	.groupTuple()
 	// .view()
 	.set{ multiplechunks_from_results_002_edit_vcf }
 
@@ -406,7 +412,7 @@ process _003_concatenate_vcf {
 	publishDir "${intermediates_dir}/_003_concatenate_vcf/",mode:"symlink"
 
 	input:
-  file chunks from multiplechunks_from_results_002_edit_vcf
+	set val( sample_name ), file( sample ) from multiplechunks_from_results_002_edit_vcf
 	file mk_files from mkfiles_003
 
   output:
