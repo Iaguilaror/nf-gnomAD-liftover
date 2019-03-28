@@ -447,6 +447,12 @@ Channel
 	.toList()
 	.set{ mkfiles_004 }
 
+/* Simplify command line string to avoid randomness from log names input in reports
+	* Cut the command at the first ocurrence of the -with- option prefix
+*/
+
+command = workflow.commandLine - ~/-with-.+/
+
 process _004_sort_and_compress {
 
 	publishDir "${results_dir}/_004_sort_and_compress/",mode:"copy"
@@ -456,16 +462,17 @@ process _004_sort_and_compress {
 	file mk_files from mkfiles_004
 
   output:
-  file "*.vcf.bgz" into results_004_sort_and_compress
+  file "*.vcf.bgz"
 
 	"""
 	export PIPELINE_VERSION="${version}"
-	export PIPELINE_COMMAND="${workflow.commandLine}"
+	export PIPELINE_COMMAND="${command}"
   bash runmk.sh
 	"""
 
 }
 
+/* Pos-processing block begins */
 /* Gather and tupple original inputs, with concatenated outputs */
 also_vcf_inputs
 	.mix(also_results_003_concatenate_vcf)

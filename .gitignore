@@ -7,3 +7,6 @@ work/
 
 ## ignore test results dir from main repo dir
 test/results/
+
+## ignore local R history files
+.Rhistory
