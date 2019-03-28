@@ -1,7 +1,7 @@
 MKSHELL=/bin/bash
 
 ## target:OPTIONS: prereq
-%.PASSfiltered.vcf:Q: %.vcf.bgz
+%.PASSfiltered.vcf:Q: %.vcf
 	echo "[DEBUG] filtering variants"
  	bcftools view --apply-filters PASS $prereq > $target.build \
 	&& mv $target.build $target

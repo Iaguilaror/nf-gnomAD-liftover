@@ -14,7 +14,7 @@ mkdir -p test/results
 echo "[>>.] results will be created in test/results"
 ## Execute runmk.sh, it will find the basic example in test/data
 ## Move results from test/data to test/results
-## results files are *.liftover.vcf
+## results files are *.liftover.vcf and *.unmap
 ./runmk.sh \
-&& mv test/data/*.liftover.vcf test/results \
+&& mv test/data/*.liftover.vcf test/data/*.liftover.vcf.unmap test/results \
 && echo "[>>>] Module Test Successful"
