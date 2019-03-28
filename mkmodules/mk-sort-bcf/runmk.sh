@@ -5,5 +5,5 @@
 find -L . \
 	-type f \
 	-name '*.vcf' \
-| sed 's#.vcf#.sorted.bcf.gz#' \
+| sed 's#.vcf#.sorted.vcf.bgz#' \
 | xargs mk

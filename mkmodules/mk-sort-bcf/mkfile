@@ -1,7 +1,7 @@
 MKSHELL=/bin/bash
 
 ## target:OPTIONS: prereq
-%.sorted.bcf.gz:Q: %.vcf
+%.sorted.vcf.bgz:Q: %.vcf
 	echo '[DEBUG] sorting and compressing vcf file'
 	## Generate a random string to name the tmp directory for sorting
 	## this avoids using system's default tmp dir
@@ -10,7 +10,7 @@ MKSHELL=/bin/bash
 	tmpdir="$(echo tmp/$tmpdirname/$tmpsubdirname/)"
 	bcftools sort \
 		--output-file $target.build \
-		--output-type b \
+		--output-type z \
 		--temp-dir $tmpdir \
 		$prereq \
 	&& mv $target.build $target
