@@ -30,7 +30,7 @@ Pre-processing:
 
 Core-processing:
 	_001_liftover
-	_002_simplify_header
+	_002_edit_vcf
 	_003_sort_and_compress
 
 Post-processing:
@@ -216,11 +216,11 @@ module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-P
 
 module_mk_001_liftover = "${workflow.projectDir}/mkmodules/mk-liftover"
 
-/* _002_simplify_header */
-module_mk_002_simplify_header = "${workflow.projectDir}/mkmodules/mk-simplify-vcf-header"
+/* _002_edit_vcf */
+module_mk_002_edit_vcf = "${workflow.projectDir}/mkmodules/mk-edit-vcf"
 
 /* _003_sort_and_compress */
-module_mk_003_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-bcf"
+module_mk_003_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-vcf"
 
 /*
 	READ INPUTS
@@ -303,24 +303,24 @@ results_001_liftover_mapped
 	// .view()
 	.set{ delayed_results_001_liftover_mapped }
 
-/* _002_simplify_header */
+/* _002_edit_vcf */
 
 /* Read mkfile module files */
 Channel
-	.fromPath("${module_mk_002_simplify_header}/*")
+	.fromPath("${module_mk_002_edit_vcf}/*")
 	.toList()
 	.set{ mkfiles_002 }
 
-process _002_simplify_header {
+process _002_edit_vcf {
 
-	publishDir "${intermediates_dir}/_002_simplify_header/",mode:"symlink"
+	publishDir "${intermediates_dir}/_002_edit_vcf/",mode:"symlink"
 
 	input:
   file vcf from delayed_results_001_liftover_mapped
 	file mk_files from mkfiles_002
 
   output:
-  file "*.reheaded.vcf" into results_002_simplify_header
+  file "*.edited.vcf" into results_002_edit_vcf
 
 	"""
   bash runmk.sh
@@ -328,11 +328,11 @@ process _002_simplify_header {
 
 }
 
-results_002_simplify_header
+results_002_edit_vcf
 	.toList()
 	.flatten()
 	// .view()
-	.set{ delayed_results_002_simplify_header }
+	.set{ delayed_results_002_edit_vcf }
 
 /* _003_sort_and_compress */
 
@@ -347,11 +347,11 @@ process _003_sort_and_compress {
 	publishDir "${results_dir}/_003_sort_and_compress/",mode:"copy"
 
 	input:
-  file vcf from delayed_results_002_simplify_header
+  file vcf from delayed_results_002_edit_vcf
 	file mk_files from mkfiles_003
 
   output:
-  file "*.bcf.gz" into results_003_sort_and_compress
+  file "*.vcf.bgz" into results_003_sort_and_compress
 
 	"""
   bash runmk.sh
