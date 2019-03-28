@@ -4,6 +4,7 @@
 ## Environment Variable
 # PIPELINE_VERSION="gnomAD liftover pipeline Version"
 export PIPELINE_VERSION="0.0.X"
+export PIPELINE_COMMAND="bash testmodule.sh"
 
 echo "[>..] test running this module with data in test/data"
 ## Remove old test results, if any; then create test/reults dir

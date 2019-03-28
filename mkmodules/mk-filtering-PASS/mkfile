@@ -2,12 +2,11 @@ MKSHELL=/bin/bash
 
 ## target:OPTIONS: prereq
 %.PASSfiltered.vcf:Q: %.vcf
-	if [ "$FILTER_FLAG" == "true" ]
-	then
-		echo "[DEBUG] filtering variants"
-	 	bcftools view --apply-filters PASS $prereq > $target.build
-	else
-		echo "[DEBUG] no filter aplied. Just creating symlink"
-		ln -s $(readlink -e $prereq) $target.build
-	fi \
+	echo "[DEBUG] filtering variants"
+	bcftools view --apply-filters PASS $prereq > $target.build \
+	&& mv $target.build $target
+
+%.unfiltered.vcf:Q: %.vcf
+	echo "[DEBUG] no filter aplied. Just creating symlink"
+	ln -s $(readlink -e $prereq) $target.build \
 	&& mv $target.build $target

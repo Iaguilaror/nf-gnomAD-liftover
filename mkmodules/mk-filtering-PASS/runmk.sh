@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
 
-## Find files with .vcf extension
+## This runmk requires an env variable called FILTER_FLAG
 
-find -L . \
-	-type f \
-	-name '*.vcf' \
-	! -name '*filtered.vcf' \
-| sed "s#.vcf\$#.PASSfiltered.vcf#" \
-| xargs mk
+## Decide which filename will be generated
+if [ "$FILTER_FLAG" == "true" ]
+then
+	## Find files with .vcf extension
+	find -L . \
+		-type f \
+		-name '*.vcf' \
+		! -name '*.PASSfiltered.vcf' \
+	| sed "s#.vcf\$#.PASSfiltered.vcf#" \
+	| xargs mk
+else
+	## Find files with .vcf extension
+	find -L . \
+		-type f \
+		-name '*.vcf' \
+		! -name '*.unfiltered.vcf' \
+	| sed "s#.vcf\$#.unfiltered.vcf#" \
+	| xargs mk
+fi

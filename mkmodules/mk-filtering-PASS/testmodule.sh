@@ -12,7 +12,7 @@ mkdir -p test/results
 echo "[>>.] results will be created in test/results"
 ## Execute runmk.sh, it will find the basic example in test/data
 ## Move results from test/data to test/results
-## results files are *.PASSfiltered.vcf
+## results files are *filtered.vcf
 ./runmk.sh \
-&& mv test/data/*.PASSfiltered.vcf test/results \
+&& mv test/data/*filtered.vcf test/results \
 && echo "[>>>] Module Test Successful"

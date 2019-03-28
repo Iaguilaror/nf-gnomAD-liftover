@@ -15,8 +15,9 @@ MKSHELL=/bin/bash
 	## Dont print the line with the column names (head -n -1)
 	cat $prereq | head -n -1 > $target.build
 	# Insert lines before the colnames. Said line gives info about the pipeline
-	echo "##nf-gnomAD-liftover_pipeline_version=$PIPELINE_VERSION" >> $target.build
-	echo "##nf-gnomAD-liftover_pipeline=Date: $(date +%F%_H:%M:%S) find more info at https://github.com/Iaguilaror/nf-gnomAD-liftover" >> $target.build
+	echo "##nf-gnomAD-liftover_pipeline_date= $(date +%F%_H:%M:%S) find more info at https://github.com/Iaguilaror/nf-gnomAD-liftover" >> $target.build
+	echo "##nf-gnomAD-liftover_pipeline_version= $PIPELINE_VERSION" >> $target.build
+	echo "##nf-gnomAD-liftover_pipeline_command= $PIPELINE_COMMAND" >> $target.build
 	tail -n1 $stem.postcontigblock.tmp >> $target.build \
 	&& mv $target.build $target
 

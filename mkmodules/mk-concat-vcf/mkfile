@@ -1,16 +1,19 @@
 MKSHELL=/bin/bash
 
 ## rejoin header and concatenated body
-%.PASSfiltered.liftover.edited.vcf:Q: %.concat_body.tmp
+# Use regexp to deal with filtered or unfiltered status
+# Regexp group 1 is prefix of full path to sample
+# Regexp 2 is filtered status
+(.*)\\.(.*)\\.liftover\\.edited\\.vcf:QR: \\1\\.concat_body\\.tmp
 	echo "[DEBUG] put header and body together"
 	# Use header from the first chunk
-	bcftools view -h $(ls $stem.chunk* | sort -V | head -n1) > $target.build
+	bcftools view -h $(ls $stem1.chunk* | sort -V | head -n1) > $target.build
 	cat $prereq >> $target.build \
 	&& mv $target.build $target \
-	&& rm $stem.concat_body.tmp
+	&& rm $stem1.concat_body.tmp
 
 %.concat_body.tmp:Q:
-	echo "[DEBUG] concatenating chunks"
+	echo "[DEBUG] concatenating chunks from $stem"
 	# Create empty file for receiving the body chunks
 	> $target.build
 	for chunk in $stem.chunk*

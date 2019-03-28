@@ -51,7 +51,7 @@ def helpMessage() {
 
 	Usage:
 
-  nextflow run liftover.nf --vcf_dir <path to input 1> --genome_fasta <path to input 2> --chainfile <path to input 3> [--output_dir path to results] [--chunks INT] [--rehead true|false]
+  nextflow run liftover.nf --vcf_dir <path to input 1> --genome_fasta <path to input 2> --chainfile <path to input 3> [--output_dir path to results] [--chunks INT] [--rehead true|false] [--filter_PASS true|false]
 
     --vcf_dir    <- Directory with all the vcf files to convert;
 		    vcf must be in .vcf.gz format
@@ -66,6 +66,8 @@ def helpMessage() {
 				default: 1
 		--rehead		<- clean output vcf header from unused contigs and append pipeline information;
 				default: true
+		--filter_PASS	<- keep only variants with PASS in the FILTER column of vcf;
+				default: false
 	  --help           <- Show Pipeline Information
 	  --version        <- Show Pipeline version
 	""".stripIndent()
@@ -92,6 +94,7 @@ params.genome_fasta = false //if no inputh path is provided, value is false to p
 params.chainfile = false //default is false to not trigger help message automatically at every run
 params.jobs_per_vcf = 1 //default is 1, to not split each VCF input
 params.rehead = true //default is to clean output vcf header from unused contigss, and append pipeline information
+params.filter_PASS = false // default is false to process all of the orginal reported variants from the McArthur lab
 params.help = false //default is false to not trigger help message automatically at every run
 params.version = false //default is false to not trigger version message automatically at every run
 
@@ -200,6 +203,8 @@ pipelinesummary['VCF dir']			= params.vcf_dir
 pipelinesummary['Genome fasta']			= params.genome_fasta
 pipelinesummary['ChainFile']			= params.chainfile
 pipelinesummary['Chunks per VCF']			= params.chunks
+pipelinesummary['Rehead VCF?']			= params.rehead
+pipelinesummary['Filter PASS?']			= params.filter_PASS
 pipelinesummary['Results Dir']		= results_dir
 pipelinesummary['Intermediate Dir']		= intermediates_dir
 /* print stored summary info */
@@ -306,8 +311,9 @@ process _pre1_filtering_PASS {
 
 	output:
 
-	file "*.PASSfiltered.vcf" into results_pre1_filtering_PASS
+	file "*.vcf" into results_pre1_filtering_PASS
 	"""
+	export FILTER_FLAG=${params.filter_PASS}
 	bash runmk.sh
 	"""
 
@@ -451,6 +457,7 @@ process _004_sort_and_compress {
 
 	"""
 	export PIPELINE_VERSION="${version}"
+	export PIPELINE_COMMAND="${workflow.commandLine}"
   bash runmk.sh
 	"""
 
