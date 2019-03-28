@@ -65,9 +65,9 @@ def helpMessage() {
 		--chunks		<- each input vcf file will be split in INT pieces for parallelization;
 				default: 1
 		--rehead		<- clean output vcf header from unused contigs and append pipeline information;
-				default: true
+				default: false	; enabling this severly increases runtime
 		--filter_PASS	<- keep only variants with PASS in the FILTER column of vcf;
-				default: false
+				default: false  ; might overstimate unmapped variants by mixing noPASS with no liftover variants
 	  --help           <- Show Pipeline Information
 	  --version        <- Show Pipeline version
 	""".stripIndent()
@@ -93,7 +93,7 @@ params.vcf_dir = false  //if no inputh path is provided, value is false to provo
 params.genome_fasta = false //if no inputh path is provided, value is false to provoke the error during the parameter validation block
 params.chainfile = false //default is false to not trigger help message automatically at every run
 params.jobs_per_vcf = 1 //default is 1, to not split each VCF input
-params.rehead = true //default is to clean output vcf header from unused contigss, and append pipeline information
+params.rehead = false //default is to clean output vcf header from unused contigss, and append pipeline information
 params.filter_PASS = false // default is false to process all of the orginal reported variants from the McArthur lab
 params.help = false //default is false to not trigger help message automatically at every run
 params.version = false //default is false to not trigger version message automatically at every run
