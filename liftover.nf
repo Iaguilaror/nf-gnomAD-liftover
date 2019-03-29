@@ -224,7 +224,7 @@ log.info "==========================================\nPipeline Start"
 */
 
 /* _pre0_split_vcf */
-module_mk_pre0_split_vcf = "${workflow.projectDir}/mkmodules/mk-split-vcf-option3"
+module_mk_pre0_split_vcf = "${workflow.projectDir}/mkmodules/mk-split-vcf"
 
 /* _pre1_filtering_PASS */
 module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-PASS"
