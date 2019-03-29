@@ -10,3 +10,6 @@ test/results/
 
 ## ignore local R history files
 .Rhistory
+
+## ignore real-data dir
+real-data

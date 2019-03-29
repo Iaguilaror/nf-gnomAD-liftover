@@ -70,6 +70,6 @@ donut.p <- ggplot(pie.df, aes(fill = variants, ymax = ymax, ymin = ymin, xmax = 
         legend.title = element_text( size = 6, face = "bold"),
         legend.key.height = unit(0.2, 'cm')
         ) +
-  annotate("text", x = 0, y = 0, size = 3, label = chrname)
+  annotate("text", x = 0, y = 0, size = 5, label = chrname)
 
 ggsave(filename = args[2], plot = donut.p, device = "pdf", width = 10.8, height = 7.2 , units = "cm", dpi = 300)

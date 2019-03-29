@@ -1,0 +1,53 @@
+MKSHELL=/bin/bash
+
+%.SPLITVCF:QV: %.GENERATECHUNKS
+	echo "[DEBUG] validating chunks that have at least 1 variant"
+	for chunkfile in $stem.chunk*.vcf
+	do
+		varcheck=$(bcftools view -H $chunkfile | head -n1 | wc -l)
+		if [ $varcheck -eq 0 ]
+		then
+			echo "[DEBUG] $chunkfile returns $varcheck variats. It will be deleted"
+			rm $chunkfile
+		else
+			echo "[DEBUG] $chunkfile passed the variant check. It contains at least 1 variant"
+		fi
+	done
+
+## This virtual order takes a vcf file, by using N regions from the contig length
+%.GENERATECHUNKS:QV: %.vcf.bgz %.chrsizes.tmp %.regions.tmp
+	echo "[DEBUG] splitting vcf file"
+	## loop trough regions to generate pieces of the original bedfile
+	while read region
+	do
+		chunk_number=$((chunk_number + 1))
+		subtarget="$stem.chunk$chunk_number.vcf"
+		echo "[DEBUG] extracting region $region into chunk $chunk_number"
+		bcftools view $stem.vcf.bgz \
+			$region \
+		| bcftools annotate \
+			--remove $(grep "^#" fields_to_remove.txt | tr -d "#" | tr "\n" "," | tr -d " " | sed "s#,\$##") \
+			> $subtarget.build \
+		&& mv $subtarget.build $subtarget
+	done < $stem.regions.tmp \
+	&& rm $stem.*.tmp
+
+%.regions.tmp:Q: %.chrsizes.tmp
+	# Create temp bed file with regions to extract using bcftools
+	bedtools makewindows \
+		-g $prereq \
+		-n $NUMBER_OF_CHUNKS \
+	| sed "s#\t#:#" \
+ 	| sed "s#\t#-#" > $target.build \
+	&& mv $target.build $target
+
+%.chrsizes.tmp:Q: %.vcf.bgz
+	# find chromosome being processed
+	chromosome=$(bcftools view -H $prereq | head -n1 | cut -f1)
+	# Find chromosome size in contig
+	chromosome_size=$(bcftools view -h $prereq | grep "##contig=<ID=$chromosome," | cut -d"," -f2 | cut -d"=" -f2)
+	# create a tab delimited input for bedtools make windows
+	# The genome file should tab delimited and structured as follows:
+	# <chromName><TAB><chromSize>
+	echo "$chromosome $chromosome_size" | tr " " "\t" > $target.build \
+	&& mv $target.build $target

@@ -8,7 +8,6 @@ MKSHELL=/bin/bash
 	## transform column format in fields_to_remove.txt to comma separated list
 	# IMPORTANT: lines starting wiht # WILL BE removed from the fields
 	bcftools annotate \
-		--remove $(grep "^#" fields_to_remove.txt | tr -d "#" | tr "\n" "," | sed "s#,\$##") \
 		--rename-chrs chr_synonyms.txt \
 	$prereq > $target.build \
 	&& mv $target.build $target

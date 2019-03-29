@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 ## This small script runs a module test with the sample data
 
-## Environment Variable
-# PIPELINE_VERSION="gnomAD liftover pipeline Version"
-export PIPELINE_VERSION="0.0.X"
-export PIPELINE_COMMAND="bash testmodule.sh"
+## Export variables
+# NUMBER_OF_CHUNKS="number of files that the VCF will be split"
+export NUMBER_OF_CHUNKS="10"
+
 
 echo "[>..] test running this module with data in test/data"
 ## Remove old test results, if any; then create test/reults dir
@@ -13,8 +13,7 @@ mkdir -p test/results
 echo "[>>.] results will be created in test/results"
 ## Execute runmk.sh, it will find the basic example in test/data
 ## Move results from test/data to test/results
-## results files are *.sorted.vcf.bgz
-# the tmp dir is an intermediate dir created by bcftools sort
+## results files are *.chunk*
 ./runmk.sh \
-&& mv test/data/*.sorted.vcf.bgz tmp/ test/results/ \
+&& mv test/data/*.chunk* test/results \
 && echo "[>>>] Module Test Successful"

@@ -4,6 +4,7 @@ MKSHELL=/bin/bash
 # Use regexp to deal with filtered or unfiltered status
 # Regexp group 1 is prefix of full path to sample
 # Regexp 2 is filtered status
+# Regexp 3 is liftover and edited estatus
 (.*)\\.(.*)\\.liftover\\.edited\\.vcf:QR: \\1\\.concat_body\\.tmp
 	echo "[DEBUG] put header and body together"
 	# Use header from the first chunk

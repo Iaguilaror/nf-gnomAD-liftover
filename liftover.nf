@@ -65,7 +65,7 @@ def helpMessage() {
 		--chunks		<- each input vcf file will be split in INT pieces for parallelization;
 				default: 1
 		--rehead		<- clean output vcf header from unused contigs and append pipeline information;
-				default: false	; enabling this severly increases runtime
+				default: false	; enabling this severly increases runtime ## TODO: v>=0.0.7 remove this option from test, nf and other files
 		--filter_PASS	<- keep only variants with PASS in the FILTER column of vcf;
 				default: false  ; might overstimate unmapped variants by mixing noPASS with no liftover variants
 	  --help           <- Show Pipeline Information
@@ -224,7 +224,7 @@ log.info "==========================================\nPipeline Start"
 */
 
 /* _pre0_split_vcf */
-module_mk_pre0_split_vcf = "${workflow.projectDir}/mkmodules/mk-split-vcf"
+module_mk_pre0_split_vcf = "${workflow.projectDir}/mkmodules/mk-split-vcf-option3"
 
 /* _pre1_filtering_PASS */
 module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-PASS"
@@ -232,20 +232,14 @@ module_mk_pre1_filtering_PASS = "${workflow.projectDir}/mkmodules/mk-filtering-P
 /* _001_liftover */
 module_mk_001_liftover = "${workflow.projectDir}/mkmodules/mk-liftover"
 
-/* _002_edit_vcf */
+/* _002_edit_vcf TODO: posibly remove since the split stage edits the vcf file */
 module_mk_002_edit_vcf = "${workflow.projectDir}/mkmodules/mk-edit-vcf"
 
 /* _003_concatenate_vcf */
 module_mk_003_concatenate_vcf = "${workflow.projectDir}/mkmodules/mk-concat-vcf"
 
-/* _004_sort_and_compress
-	* this module is dinamyc, affected by user requested options
-*/
-if (params.rehead) {
-	module_mk_004_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-rehead-compress-vcf"
-} else {
-	module_mk_004_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-compress-vcf"
-}
+/* _004_sort_and_compress */
+module_mk_004_sort_and_compress = "${workflow.projectDir}/mkmodules/mk-sort-compress-vcf"
 
 /* _pos1_count_lifted_variants */
 module_mk_pos1_count_lifted_variants = "${workflow.projectDir}/mkmodules/mk-count-lifted-variants"
@@ -253,11 +247,23 @@ module_mk_pos1_count_lifted_variants = "${workflow.projectDir}/mkmodules/mk-coun
 /*
 	READ INPUTS
 */
+/* Define function for finding files that share sample name */
+/* in this case, the file name comes from the 1st, since tokenize array starts at 0, array index shoould be 0 */
+def get_sample_prefix = { file -> file.name.toString().tokenize('.')[0] }
 
-/* Load vcf files into channel */
+/* Load vcf files AND TABIX INDEX into channel */
 Channel
-  .fromPath("${params.vcf_dir}/*")
-  .into{ vcf_inputs; also_vcf_inputs }
+  .fromPath("${params.vcf_dir}/*vcf*")
+	.map{ file -> tuple(get_sample_prefix(file), file) }
+	.groupTuple()
+	// .view()
+  .set{ vcf_inputs}
+
+/* Load vcf files into channel , THIS SIMPLIFYES TUPPLING DURING POS1 STAGE*/
+Channel
+  .fromPath("${params.vcf_dir}/*vcf.bgz")
+	// .view()
+  .set{ also_vcf_inputs }
 
 /* Load genome fasta file, and chainfile into channel */
 Channel
@@ -277,7 +283,7 @@ process _pre0_split_vcf {
 	publishDir "${intermediates_dir}/_pre0_split_vcf/",mode:"symlink"
 
 	input:
-  file vcf from vcf_inputs
+	set val( sample_name ), file( sample ) from vcf_inputs
 	file mk_files from mkfiles_pre0
 
 	output:
@@ -396,13 +402,10 @@ results_002_edit_vcf
 	// .view()
 	.set{ delayed_results_002_edit_vcf }
 
-/* Define function for finding files that share sample name */
-/* in this case, the file name comes from the 1st, since tokenize array starts at 0, array index shoould be 0 */
-def get_sample_prefix = { file -> file.name.toString().tokenize('.')[0] }
-
 /* Gather every chunk into a single list object */
 /* Separate in tuples by sample */
 delayed_results_002_edit_vcf
+// delayed_results_001_liftover_mapped
 	.map{ file -> tuple(get_sample_prefix(file), file) }
 	.groupTuple()
 	// .view()
