@@ -22,8 +22,9 @@ MKSHELL=/bin/bash
 	# Calculate total variants from subprereq
 	total_variants=$(bcftools stats $subprereq | grep -m1 "number of records:" | cut -f4)
 	mapped_variants=$(bcftools stats $prereq | grep -m1 "number of records:" | cut -f4)
-	## count variants with PASS in the filter columns, using the answer from https://unix.stackexchange.com/questions/362278/how-to-use-awk-to-count-the-total-number-of-input-lines-in-a-file
-	mapped_variants_PASS=$(bcftools view -H $prereq | cut -f7 | grep -w -c "^PASS")
+	## count variants with PASS in the filter columns
+	## could be replaced by bcftools --aply-filter PASS | wc -l
+	mapped_variants_PASS=$(bcftools view -H --apply-filters PASS $prereq | wc -l)
 	# calculate unmapped_variants
 	unmapped_variants=$(($total_variants - $mapped_variants))
 	# noPASS variants
